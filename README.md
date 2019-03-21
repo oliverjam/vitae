@@ -1,2 +1,0 @@
-# vitae
-Created with CodeSandbox
