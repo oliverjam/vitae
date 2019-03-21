@@ -13,6 +13,58 @@ const INPUT_RESET = {
 };
 
 function App() {
+  const [blocks] = React.useState([
+    [[1, 2], [1, 2]],
+    [[1, 3], [2, 3]],
+    [[2, 3], [1, 2]],
+  ]);
+  const rows = React.useMemo(
+    () =>
+      blocks.reduce(
+        (highest, [[rowStart]]) => (rowStart > highest ? rowStart : highest),
+        0
+      ),
+    [blocks]
+  );
+  return (
+    <>
+      <Global
+        styles={{
+          "*": {
+            margin: 0,
+            boxSizing: "border-box",
+          },
+          "html, body, #root": {
+            height: "100%",
+          },
+          body: {
+            backgroundColor: "hsl(220, 10%, 90%)",
+          },
+        }}
+      />
+      <div
+        css={{
+          position: "relative",
+          width: "210mm",
+          height: "297mm",
+          margin: "0 auto",
+          padding: "1rem",
+          display: "grid",
+          gridTemplateColumns: `1.61fr 1fr`,
+          gridTemplateRows: `repeat(${rows}, auto)`,
+          gap: "1.5rem",
+          backgroundColor: "hsl(220, 10%, 96%)",
+        }}
+      >
+        {blocks.map(([row, col]) => (
+          <Block row={row} col={col} key={`block-${row}${col}`} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function Block({ row, col }) {
   const [raw, setRaw] = React.useState("Test");
   const [parsed, setParsed] = React.useState("Test");
   const [editing, setEditing] = React.useState(false);
@@ -28,104 +80,91 @@ function App() {
     }
   }, [editing]);
   return (
-    <>
-      <Global
-        styles={{
-          "*": {
-            margin: 0,
-            boxSizing: "border-box",
-          },
-          "html, body, #root": {
-            height: "100%",
-          },
-        }}
-      />
-      <div
-        css={{
-          position: "relative",
-          height: "100%",
-          padding: "1rem",
-          backgroundColor: "hsl(220, 10%, 96%)",
-        }}
-      >
-        {editing && (
-          <textarea
-            css={{
-              ...INPUT_RESET,
-              position: "absolute",
-              top: "1rem",
-              left: "1rem",
-              right: "1rem",
-              bottom: "1rem",
-              display: "block",
-              width: "100%",
-              height: "100%",
-              padding: "1rem",
-              backgroundColor: "white",
-              "&:focus": {
-                boxShadow: "0 0 0 0.25rem hsl(220, 50%, 60%)",
-              },
-              "&:disabled": {
-                color: "inherit",
-              },
-            }}
-            ref={inputRef}
-            value={raw}
-            onChange={event => setRaw(event.target.value)}
-            disabled={!editing}
-          />
-        )}
-        {!editing && <Markdown styles={styles}>{parsed}</Markdown>}
-
-        <div
-          css={{
-            position: "absolute",
-            top: "1rem",
-            right: "1rem",
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: "0.5rem",
-          }}
-        >
-          <StylePicker styles={styles} setStyles={setStyles} />
-          <button
-            css={{
-              ...INPUT_RESET,
-
-              fontSize: "1.5rem",
-            }}
-            onClick={() => {
-              setEditing(prev => !prev);
-              const html = snarkdown(raw);
-              setParsed(html);
-            }}
-          >
-            {editing ? "🔒" : "🔓"}
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function Markdown({ styles, children }) {
-  return (
     <div
       css={{
-        position: "absolute",
-        top: "1rem",
-        left: "1rem",
-        right: "1rem",
-        bottom: "1rem",
+        position: "relative",
+        height: "100%",
+        overflow: "hidden",
+        gridRowStart: row[0],
+        gridRowEnd: row[1],
+        gridColumnStart: col[0],
+        gridColumnEnd: col[1],
       }}
     >
+      {editing && (
+        <textarea
+          css={{
+            ...INPUT_RESET,
+            // position: "absolute",
+            // top: "1rem",
+            // left: "1rem",
+            // right: "1rem",
+            // bottom: "1rem",
+            display: "block",
+            width: "100%",
+            height: "100%",
+            padding: "1rem",
+            backgroundColor: "white",
+            "&:focus": {
+              boxShadow: "0 0 0 0.25rem hsl(220, 50%, 60%)",
+            },
+            "&:disabled": {
+              color: "inherit",
+            },
+          }}
+          ref={inputRef}
+          value={raw}
+          onChange={event => setRaw(event.target.value)}
+          disabled={!editing}
+        />
+      )}
+      {!editing && (
+        <div
+          css={{
+            height: "100%",
+            // position: "absolute",
+            // top: "1rem",
+            // left: "1rem",
+            // right: "1rem",
+            // bottom: "1rem",
+          }}
+        >
+          <div
+            css={{
+              height: "100%",
+              ...styles,
+            }}
+            dangerouslySetInnerHTML={{ __html: parsed }}
+          />
+        </div>
+      )}
+
       <div
         css={{
-          height: "100%",
-          ...styles,
+          position: "absolute",
+          top: "1rem",
+          right: "1rem",
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: "0.5rem",
         }}
-        dangerouslySetInnerHTML={{ __html: children }}
-      />
+      >
+        <StylePicker styles={styles} setStyles={setStyles} />
+        <button
+          css={{
+            ...INPUT_RESET,
+
+            fontSize: "1.5rem",
+          }}
+          onClick={() => {
+            setEditing(prev => !prev);
+            const html = snarkdown(raw);
+            setParsed(html);
+          }}
+        >
+          {editing ? "🔒" : "🔓"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -163,6 +202,7 @@ function StylePicker({ styles, setStyles }) {
             width: "max-content",
             padding: "1rem",
             boxShadow: "0 2px 4px hsla(220, 10%, 20%, 0.5)",
+            backgroundColor: "#fff",
           }}
         >
           <label htmlFor="fontFamily">
